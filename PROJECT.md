@@ -41,7 +41,7 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 
 ## Current Stage
 
-Agent lifecycle 구현 단계.
+Agent lifecycle 구현 완료.
 
 현재 구현 범위:
 
@@ -55,7 +55,7 @@ Agent lifecycle 구현 단계.
 
 * [x] AgentRun
 * [x] State Machine
-* [ ] AgentLifecycle
+* [x] AgentLifecycle
 * [ ] AgentRuntime
 * [ ] Tool Gateway
 * [ ] Persistence

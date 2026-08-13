@@ -1,10 +1,12 @@
-from src.agent_harness.runs.model import AgentRun, RunStatus
-from src.agent_harness.runs.state_machine import (
+from .runs.lifecycle import AgentLifecycle
+from .runs.model import AgentRun, RunStatus
+from .runs.state_machine import (
     AgentRunStateMachine,
     InvalidRunTransitionError,
 )
 
 __all__ = [
+    "AgentLifecycle",
     "AgentRun",
     "AgentRunStateMachine",
     "InvalidRunTransitionError",

@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from model import AgentRun, RunStatus, utc_now
+from .model import AgentRun, RunStatus, utc_now
 
 
 ALLOWED_TRANSITIONS: Mapping[RunStatus, frozenset[RunStatus]] = {
@@ -62,6 +62,14 @@ class AgentRunStateMachine:
             raise InvalidRunTransitionError(self.run.status, target)
 
         self.run.status = target
+        self.run.updated_at = utc_now()
+        return self.run
+
+    def advance_step(self) -> AgentRun:
+        if self.run.status is not RunStatus.RUNNING:
+            raise RuntimeError("AgentRun steps can only advance while running")
+
+        self.run.current_step += 1
         self.run.updated_at = utc_now()
         return self.run
 
