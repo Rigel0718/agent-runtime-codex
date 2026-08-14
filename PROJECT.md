@@ -39,10 +39,11 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 * MVP를 단계적으로 구현하며, 아직 필요하지 않은 abstraction은 미리 만들지 않는다.
 * `AgentRun`의 lifecycle status 변경은 state machine을 통해 수행한다.
 * `AgentRuntime`에서도 `AgentRun.status`를 직접 변경하지 않고 `AgentLifecycle`을 통해 상태를 변경한다.
+* step의 도메인 기준이 정해질 때까지 `AgentRun`은 현재 step을 추적하지 않는다.
 
 ## Current Stage
 
-Agent lifecycle 구현 완료.
+Agent runtime 구현 완료.
 
 현재 구현 완료 범위:
 
@@ -50,12 +51,13 @@ Agent lifecycle 구현 완료.
 AgentRun
 → State Machine
 → AgentLifecycle
+→ AgentRuntime
 ```
 
-현재 구현 단계:
+다음 구현 단계:
 
 ```text
-AgentRuntime
+Tool Gateway
 ```
 
 Initial Runtime scope:
@@ -80,8 +82,8 @@ Tool Gateway, Persistence, HITL, Context, Tracing, Evaluation은 각각의 구�
 * [x] AgentRun
 * [x] State Machine
 * [x] AgentLifecycle
-* [ ] AgentRuntime ← current
-* [ ] Tool Gateway
+* [x] AgentRuntime
+* [ ] Tool Gateway ← next
 * [ ] Persistence
 * [ ] HITL
 * [ ] Context
