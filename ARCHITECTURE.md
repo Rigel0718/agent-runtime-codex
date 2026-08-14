@@ -12,6 +12,12 @@ State Machine
 AgentLifecycle
     ↑
 AgentRuntime
+
+OpenAI Agents SDK
+    ↓
+Tool Gateway
+    ↓
+Tools
 ```
 
 ## AgentRun
@@ -73,6 +79,20 @@ It must not:
 * reimplement the OpenAI Agents SDK execution loop
 * implement future infrastructure such as persistence, HITL, context, tracing, or evaluation
 
+## Tool Gateway
+
+`ToolGateway` provides the harness-controlled execution boundary for tools used by SDK Agents.
+
+It is responsible for resolving registered tools and delegating tool execution.
+
+It must not:
+
+* orchestrate SDK Agent execution
+* mutate `AgentRun` lifecycle state
+* implement individual tool business logic
+* reimplement the OpenAI Agents SDK tool-calling loop
+* implement future infrastructure such as persistence, HITL, tracing, context, or evaluation
+
 ## Layer Responsibilities
 
 AgentRun
@@ -87,12 +107,15 @@ AgentLifecycle
 AgentRuntime
 → orchestrates actual execution
 
+Tool Gateway
+→ controls the boundary between SDK tool calls and tool execution
+
 OpenAI Agents SDK
 → executes Agent-level behavior
 
 ## Current Scope
 
-Implement through `AgentRuntime`.
+Implement through `ToolGateway`.
 
 Do not implement later infrastructure unless explicitly requested.
 
