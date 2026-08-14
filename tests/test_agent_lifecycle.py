@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.agent_harness import (
+from agent_harness import (
     AgentLifecycle,
     AgentRun,
     AgentRunStateMachine,
