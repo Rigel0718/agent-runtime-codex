@@ -44,7 +44,7 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 
 ## Current Stage
 
-Agent runtime 구현 완료.
+Tool Gateway 구현 완료.
 
 현재 구현 완료 범위:
 
@@ -53,12 +53,13 @@ AgentRun
 → State Machine
 → AgentLifecycle
 → AgentRuntime
+→ ToolGateway
 ```
 
-현재 구현 단계:
+다음 구현 단계:
 
 ```text
-Tool Gateway
+Persistence
 ```
 
 Initial Tool Gateway scope:
@@ -75,7 +76,9 @@ execute tool
 return result
 ```
 
-현재 단계에서는 tool registration, resolution, execution boundary까지만 구현한다.
+Tool Gateway 단계에서는 SDK `FunctionTool` registration, resolution, execution boundary와
+Gateway를 통과하는 SDK-compatible adapter를 구현했다. SDK `Runner`의 execution loop는
+그대로 사용한다.
 
 Persistence, HITL, Context, Tracing, Evaluation은 각각의 구현 단계에서 통합한다.
 
@@ -85,8 +88,8 @@ Persistence, HITL, Context, Tracing, Evaluation은 각각의 구현 단계에서
 * [x] State Machine
 * [x] AgentLifecycle
 * [x] AgentRuntime
-* [ ] Tool Gateway ← current
-* [ ] Persistence
+* [x] Tool Gateway
+* [ ] Persistence ← next
 * [ ] HITL
 * [ ] Context
 * [ ] Tracing

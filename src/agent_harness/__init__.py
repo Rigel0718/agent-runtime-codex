@@ -5,6 +5,7 @@ from .runs.state_machine import (
     AgentRunStateMachine,
     InvalidRunTransitionError,
 )
+from .tools import ToolGateway, ToolNotRegisteredError
 
 __all__ = [
     "AgentLifecycle",
@@ -13,4 +14,6 @@ __all__ = [
     "AgentRunStateMachine",
     "InvalidRunTransitionError",
     "RunStatus",
+    "ToolGateway",
+    "ToolNotRegisteredError",
 ]

@@ -83,7 +83,12 @@ It must not:
 
 `ToolGateway` provides the harness-controlled execution boundary for tools used by SDK Agents.
 
-It is responsible for resolving registered tools and delegating tool execution.
+It owns a minimal in-memory registry of SDK `FunctionTool` instances, resolves tools by name,
+and delegates execution to the registered tool.
+
+For SDK integration, it creates an SDK-compatible `FunctionTool` adapter that preserves the
+registered tool's definition while routing `on_invoke_tool` through the gateway. The SDK
+`Runner` continues to own the Agent and tool-calling execution loops.
 
 It must not:
 
@@ -115,7 +120,7 @@ OpenAI Agents SDK
 
 ## Current Scope
 
-Implement through `ToolGateway`.
+Implemented through `ToolGateway`.
 
 Do not implement later infrastructure unless explicitly requested.
 
