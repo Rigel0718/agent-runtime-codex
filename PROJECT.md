@@ -1,5 +1,3 @@
-# PROJECT.md
-
 # Agent Harness
 
 ## Goal
@@ -33,30 +31,56 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 * OpenAI Agents SDK의 `Agent`를 그대로 사용한다.
 * 별도의 custom Agent class를 만들지 않는다.
 * Harness의 runtime 및 execution control layer를 직접 구현한다.
+* OpenAI SDK `Runner`의 내부 Agent execution을 재구현하지 않는다.
+* `AgentRuntime`은 SDK execution과 Harness lifecycle을 연결하는 orchestration layer로 둔다.
 * Pydantic을 domain model로 사용한다.
 * Domain model과 persistence model을 분리한다.
 * DB persistence는 이후 SQLAlchemy를 통해 구현한다.
 * MVP를 단계적으로 구현하며, 아직 필요하지 않은 abstraction은 미리 만들지 않는다.
 * `AgentRun`의 lifecycle status 변경은 state machine을 통해 수행한다.
+* `AgentRuntime`에서도 `AgentRun.status`를 직접 변경하지 않고 `AgentLifecycle`을 통해 상태를 변경한다.
 
 ## Current Stage
 
 Agent lifecycle 구현 완료.
 
-현재 구현 범위:
+현재 구현 완료 범위:
 
-`AgentRun → State Machine → AgentLifecycle`
+```text
+AgentRun
+→ State Machine
+→ AgentLifecycle
+```
 
-다음 단계:
+현재 구현 단계:
 
-`AgentRuntime`
+```text
+AgentRuntime
+```
+
+Initial Runtime scope:
+
+```text
+AgentRuntime.run()
+    ↓
+AgentLifecycle.start()
+    ↓
+OpenAI SDK Runner
+    ↓
+success → AgentLifecycle.complete()
+failure → AgentLifecycle.fail()
+```
+
+현재 단계에서는 SDK execution과 lifecycle 연결까지만 구현한다.
+
+Tool Gateway, Persistence, HITL, Context, Tracing, Evaluation은 각각의 구현 단계에서 Runtime과 통합한다.
 
 ## Progress
 
 * [x] AgentRun
 * [x] State Machine
 * [x] AgentLifecycle
-* [ ] AgentRuntime
+* [ ] AgentRuntime ← current
 * [ ] Tool Gateway
 * [ ] Persistence
 * [ ] HITL

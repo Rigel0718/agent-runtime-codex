@@ -1,30 +1,24 @@
-# ARCHITECTURE.md
-
-## Goal
-
-Build a production-oriented Agent Harness around the OpenAI Agents SDK.
-
-The project is developed incrementally as an MVP.
-
-Do not design future components before they are required.
+# Agent Harness Architecture
 
 ## Current Architecture
 
 Current scope:
 
+```text
 AgentRun
     ↑
 State Machine
     ↑
 AgentLifecycle
-
-`AgentRuntime` will be introduced after the lifecycle layer is complete.
+    ↑
+AgentRuntime
+```
 
 ## AgentRun
 
 `AgentRun` represents one harness execution.
 
-It stores run state and does not orchestrate execution.
+It stores run state and request data and does not orchestrate execution.
 
 ## State Machine
 
@@ -34,9 +28,9 @@ All status changes must go through the state machine.
 
 Terminal states:
 
-- COMPLETED
-- FAILED
-- CANCELLED
+* COMPLETED
+* FAILED
+* CANCELLED
 
 Terminal states cannot transition further.
 
@@ -44,27 +38,45 @@ Terminal states cannot transition further.
 
 `AgentLifecycle` exposes semantic lifecycle operations such as:
 
-- start
-- complete
-- fail
-- cancel
-- request approval
-- resume
+* start
+* complete
+* fail
+* cancel
+* request approval
+* resume
 
 It delegates all status transitions to the state machine.
 
 It must not execute:
 
-- OpenAI SDK Agents
-- tools
-- persistence
-- tracing
-- context management
+* OpenAI SDK Agents
+* tools
+* persistence
+* tracing
+* context management
+
+## AgentRuntime
+
+`AgentRuntime` orchestrates actual Agent execution.
+
+It connects OpenAI Agents SDK execution with the harness lifecycle.
+
+It is responsible for:
+
+* starting the lifecycle before execution
+* executing the SDK Agent
+* completing or failing the lifecycle according to the execution result
+
+It must not:
+
+* directly mutate `AgentRun` status
+* reimplement the OpenAI Agents SDK execution loop
+* implement future infrastructure such as persistence, HITL, context, tracing, or evaluation
 
 ## Layer Responsibilities
 
 AgentRun
-→ stores run state
+→ stores run state and request data
 
 State Machine
 → owns transition rules
@@ -72,14 +84,17 @@ State Machine
 AgentLifecycle
 → exposes semantic lifecycle operations
 
-Future AgentRuntime
+AgentRuntime
 → orchestrates actual execution
+
+OpenAI Agents SDK
+→ executes Agent-level behavior
 
 ## Current Scope
 
-Implement through `AgentLifecycle`.
+Implement through `AgentRuntime`.
 
-Do not implement `AgentRuntime` or later infrastructure unless explicitly requested.
+Do not implement later infrastructure unless explicitly requested.
 
 ## Evolution
 
