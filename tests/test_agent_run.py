@@ -21,7 +21,6 @@ def test_agent_run_is_created_with_safe_defaults() -> None:
     run = make_run()
 
     assert run.status is RunStatus.CREATED
-    assert run.current_step == 0
     assert run.run_id
     assert run.created_at.tzinfo is not None
     assert run.updated_at.tzinfo is not None
@@ -47,11 +46,9 @@ def test_happy_path_reaches_completed() -> None:
     machine = AgentRunStateMachine(run)
 
     machine.transition_to(RunStatus.RUNNING)
-    machine.advance_step()
     machine.transition_to(RunStatus.COMPLETED)
 
     assert run.status is RunStatus.COMPLETED
-    assert run.current_step == 1
     assert machine.is_terminal
 
 
@@ -91,11 +88,4 @@ def test_terminal_state_cannot_transition() -> None:
 
     with pytest.raises(InvalidRunTransitionError):
         machine.transition_to(RunStatus.RUNNING)
-
-
-def test_step_only_advances_while_running() -> None:
-    machine = AgentRunStateMachine(make_run())
-
-    with pytest.raises(RuntimeError):
-        machine.advance_step()
 

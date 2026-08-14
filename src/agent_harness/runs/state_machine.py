@@ -65,12 +65,3 @@ class AgentRunStateMachine:
         self.run.updated_at = utc_now()
         return self.run
 
-    def advance_step(self) -> AgentRun:
-        if self.run.status is not RunStatus.RUNNING:
-            raise RuntimeError("AgentRun steps can only advance while running")
-
-        # self.run.current_step += 1
-        self.run.updated_at = utc_now()
-        return self.run
-
-

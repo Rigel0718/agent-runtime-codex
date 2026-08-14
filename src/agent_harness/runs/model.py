@@ -28,7 +28,6 @@ class AgentRun(BaseModel):
     user_id: UUID
     input: str = Field(min_length=1)
     status: RunStatus = RunStatus.CREATED
-    # current_step: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
