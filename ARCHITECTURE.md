@@ -12,6 +12,8 @@ State Machine
 AgentLifecycle
     ↑
 AgentRuntime
+    │
+    └── Persistence
 
 OpenAI Agents SDK
     ↓
@@ -71,22 +73,25 @@ It must not execute:
 
 `AgentRuntime` orchestrates actual Agent execution.
 
-It connects OpenAI Agents SDK execution with the harness lifecycle.
+It connects OpenAI Agents SDK execution with the harness lifecycle and Persistence.
 
 It is responsible for:
 
 * starting the lifecycle before execution
 * executing the SDK Agent
 * completing or failing the lifecycle according to the execution result
+* persisting `AgentRun` after runtime-owned lifecycle transitions
 
 It must not:
 
 * directly mutate `AgentRun` status
 * reimplement the OpenAI Agents SDK execution loop
-* implement persistence details
+* implement database or SQLAlchemy details
+* decide persistence mapping rules
+* take ownership of `AgentRun` creation for persistence integration
 * implement future infrastructure such as HITL, context, tracing, or evaluation
 
-Persistence integration with runtime orchestration may be added after the Persistence boundary itself is implemented and verified.
+Runtime orchestrates persistence timing, while Lifecycle owns transitions and Persistence owns storage.
 
 ## Tool Gateway
 
@@ -125,6 +130,7 @@ Persistence must not:
 * decide or perform lifecycle transitions
 * mutate `AgentRun` status according to business rules
 * orchestrate Agent execution
+* decide when runtime lifecycle transitions occur
 * execute tools
 * implement HITL, context, tracing, or evaluation
 * introduce generic persistence abstractions without a current requirement
@@ -144,7 +150,7 @@ AgentLifecycle
 → exposes semantic lifecycle operations
 
 AgentRuntime
-→ orchestrates actual execution
+→ orchestrates execution and persistence timing for runtime-owned transitions
 
 Tool Gateway
 → controls the boundary between SDK tool calls and tool execution
@@ -158,11 +164,11 @@ OpenAI Agents SDK
 
 ## Current Scope
 
-Implemented through `Persistence`.
+Implemented through Runtime-Persistence integration.
 
-Runtime-Persistence integration is the next implementation stage.
+The runtime persists runtime-owned `RUNNING`, `COMPLETED`, and `FAILED` states.
 
-Do not implement later infrastructure unless explicitly requested.
+Retry policy, Unit of Work, transaction orchestration, and later infrastructure are outside the current scope.
 
 ## Evolution
 

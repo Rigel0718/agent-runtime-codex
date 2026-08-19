@@ -6,8 +6,7 @@ Persistence는 `AgentRun`을 durable storage에 저장하고 다시 복원하는
 
 현재 MVP에서는 `AgentRun`만 persistence 대상으로 한다.
 
-Persistence는 domain state를 저장할 뿐,
-lifecycle transition이나 Agent execution을 결정하지 않는다.
+Persistence는 domain state를 저장할 뿐, lifecycle transition이나 Agent execution을 결정하지 않는다.
 
 ```text
 AgentRun
@@ -30,9 +29,9 @@ Persistence는 다음을 담당한다.
 
 Persistence는 다음을 담당하지 않는다.
 
-* lifecycle transition
-* `AgentRun.status` 결정
+* lifecycle transition 또는 `AgentRun.status` 결정
 * Agent execution orchestration
+* runtime lifecycle transition의 발생 시점 결정
 * Tool execution
 * HITL, Context, Tracing, Evaluation
 
@@ -49,8 +48,6 @@ AgentRun
 Persistence는 상태 변화가 완료된 `AgentRun`을 저장한다.
 
 ## Structure
-
-권장 최소 구조:
 
 ```text
 persistence/
@@ -73,8 +70,6 @@ Domain `AgentRun`은 SQLAlchemy에 의존하지 않는다.
 
 `AgentRun`의 persistence operation을 제공한다.
 
-초기 public API:
-
 ```python
 class AgentRunRepository:
     async def save(self, run: AgentRun) -> None:
@@ -84,47 +79,73 @@ class AgentRunRepository:
         ...
 ```
 
-`save()`는 새 `AgentRun`을 저장하고,
-동일한 `run_id`가 존재하면 현재 state로 갱신한다.
+`save()`는 새 `AgentRun`을 저장하고 동일한 `run_id`가 존재하면 현재 state로 갱신한다.
 
-`get()`은 저장된 record를 domain `AgentRun`으로 복원하며,
-존재하지 않으면 `None`을 반환한다.
+`get()`은 저장된 record를 domain `AgentRun`으로 복원하며, 존재하지 않으면 `None`을 반환한다.
 
-현재 규모에서는 mapping을 repository 내부 private function으로 둘 수 있다.
+현재 규모에서는 mapping을 repository 내부 private function으로 두며 별도의 Mapper abstraction은 만들지 않는다.
 
-별도의 Mapper abstraction은 만들지 않는다.
+## Current Status
 
-## Initial Scope
+초기 Persistence 구현과 Runtime-Persistence integration은 완료되었다.
 
-현재 단계에서 구현한다.
+구현 완료 범위:
 
 * SQLAlchemy database/session setup
 * `AgentRunModel`
 * `AgentRun` ↔ `AgentRunModel` mapping
-* `AgentRunRepository.save()`
-* `AgentRunRepository.get()`
-* 관련 tests
+* `AgentRunRepository.save()` / `get()`
+* 관련 repository tests
+* Runtime의 `RUNNING`, `COMPLETED`, `FAILED` transition 직후 저장
+* success, SDK failure, initial persistence failure integration tests
 
-현재 단계에서는 구현하지 않는다.
+## Runtime-Persistence Integration
 
-* Runtime-Persistence integration
-* Generic Repository
-* Unit of Work
-* Event Sourcing
-* Audit Log
-* Cache
+`AgentRuntime`은 Persistence 자체를 확장하지 않고 기존 repository와 연결된다.
+
+```text
+AgentRuntime
+    ↓
+AgentLifecycle transition
+    ↓
+AgentRun
+    ↓
+AgentRunRepository.save()
+```
+
+현재 integration 대상:
+
+```text
+start()    → RUNNING   → save
+complete() → COMPLETED → save
+fail()     → FAILED    → save
+```
+
+책임은 다음과 같이 유지한다.
+
+* `AgentLifecycle`은 state transition을 결정한다.
+* Persistence는 변경된 `AgentRun`을 저장한다.
+* `AgentRuntime`은 execution 흐름에서 transition과 save의 시점을 orchestration한다.
+
+Runtime-Persistence integration만을 위해 Runtime이 `AgentRun` 생성 책임을 새로 소유하지 않는다.
+
+`CREATED` 상태의 최초 저장 시점과 상위 application orchestration은 현재 단계에서 결정하지 않는다.
+
+## Integration Result
+
+구현 범위:
+
+* `AgentRuntime`과 `AgentRunRepository` 연결
+* `RUNNING`, `COMPLETED`, `FAILED` transition 후 저장
+* 기존 SDK `RunResult` 반환과 execution exception re-raise 유지
+* success / failure orchestration tests
+* persistence exception을 숨기지 않고 caller에게 전달
+
+현재 범위 밖:
+
+* Generic Repository / Unit of Work
+* retry policy / transaction orchestration
+* Event Sourcing / Audit Log / Cache
 * HITL / Context / Trace / Eval persistence
 
-Runtime과 Persistence의 연결은 Persistence 자체가 구현되고 검증된 뒤 별도 단계에서 설계한다.
-
-## Completion Criteria
-
-다음 조건을 만족하면 초기 Persistence 구현을 완료한 것으로 본다.
-
-* 새 `AgentRun`을 저장할 수 있다.
-* 저장된 `AgentRun`을 `run_id`로 조회할 수 있다.
-* 동일한 `run_id`의 `AgentRun`을 다시 저장하면 현재 state가 반영된다.
-* 존재하지 않는 `run_id` 조회 시 `None`을 반환한다.
-* 모든 현재 `AgentRun` field가 정상적으로 round-trip 된다.
-* Domain `AgentRun`이 SQLAlchemy에 의존하지 않는다.
-* 관련 tests가 통과한다.
+Persistence 실패에 대한 recovery infrastructure는 필요가 생길 때 별도 설계한다.
