@@ -16,13 +16,15 @@ Agent runtime, lifecycle, tool control, persistence, HITL, context, tracing, eva
 * PostgreSQL
 * OpenAI Agents SDK
 * Pydantic v2
-* SQLAlchemy (later)
+* SQLAlchemy
 
 ## Architecture
 
 현재 시스템 구조와 layer responsibility는 `ARCHITECTURE.md`를 따른다.
 
 Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
+
+Persistence의 상세 설계와 현재 구현 범위는 `PERSISTENCE.md`를 따른다.
 
 ## Decisions
 
@@ -36,7 +38,11 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 * `ToolGateway`는 SDK tool call과 실제 tool execution 사이의 Harness-controlled boundary로 둔다.
 * Pydantic을 domain model로 사용한다.
 * Domain model과 persistence model을 분리한다.
-* DB persistence는 이후 SQLAlchemy를 통해 구현한다.
+* DB persistence는 SQLAlchemy를 통해 구현한다.
+* Persistence는 `AgentRun`의 저장과 복원을 담당하며 lifecycle rule을 소유하지 않는다.
+* Persistence가 `AgentRun.status`를 결정하거나 lifecycle transition을 수행하지 않는다.
+* Persistence MVP에서는 `AgentRun`만 persistence 대상으로 한다.
+* Persistence MVP에서는 generic repository, Unit of Work 등의 선행 abstraction을 만들지 않는다.
 * MVP를 단계적으로 구현하며, 아직 필요하지 않은 abstraction은 미리 만들지 않는다.
 * `AgentRun`의 lifecycle status 변경은 state machine을 통해 수행한다.
 * `AgentRuntime`에서도 `AgentRun.status`를 직접 변경하지 않고 `AgentLifecycle`을 통해 상태를 변경한다.
@@ -44,7 +50,7 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 
 ## Current Stage
 
-Tool Gateway 구현 완료.
+Persistence 초기 구현 완료.
 
 현재 구현 완료 범위:
 
@@ -54,33 +60,21 @@ AgentRun
 → AgentLifecycle
 → AgentRuntime
 → ToolGateway
+→ Persistence
 ```
 
-다음 구현 단계:
+다음 구현 대상:
 
 ```text
+AgentRuntime
+    ↕
 Persistence
 ```
 
-Initial Tool Gateway scope:
+`AgentRuntime`과 Persistence의 실제 orchestration integration은 Persistence 구현이 검증된 뒤
+별도 작업으로 진행한다.
 
-```text
-SDK Tool Call
-    ↓
-Tool Gateway
-    ↓
-resolve registered tool
-    ↓
-execute tool
-    ↓
-return result
-```
-
-Tool Gateway 단계에서는 SDK `FunctionTool` registration, resolution, execution boundary와
-Gateway를 통과하는 SDK-compatible adapter를 구현했다. SDK `Runner`의 execution loop는
-그대로 사용한다.
-
-Persistence, HITL, Context, Tracing, Evaluation은 각각의 구현 단계에서 통합한다.
+HITL, Context, Tracing, Evaluation은 현재 scope에 포함하지 않는다.
 
 ## Progress
 
@@ -89,11 +83,26 @@ Persistence, HITL, Context, Tracing, Evaluation은 각각의 구현 단계에서
 * [x] AgentLifecycle
 * [x] AgentRuntime
 * [x] Tool Gateway
-* [ ] Persistence ← next
+* [x] Persistence
+* [ ] Runtime-Persistence integration ← next
 * [ ] HITL
 * [ ] Context
 * [ ] Tracing
 * [ ] Evaluation
+
+## Persistence Implementation Order
+
+1. Persistence responsibility와 boundary 확정
+2. SQLAlchemy persistence model 구현
+3. database/session infrastructure 구현
+4. `AgentRun` 저장 구현
+5. `AgentRun` 복원 구현
+6. domain ↔ persistence mapping 검증
+7. repository tests
+8. 구현 결과 검토
+9. Runtime-Persistence integration 설계
+
+Persistence 초기 단계에서 1~7까지 구현을 완료했다.
 
 ## Development Approach
 

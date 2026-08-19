@@ -18,6 +18,12 @@ OpenAI Agents SDK
 Tool Gateway
     ↓
 Tools
+
+AgentRun
+    ↕
+Persistence
+    ↕
+Database
 ```
 
 ## AgentRun
@@ -77,7 +83,10 @@ It must not:
 
 * directly mutate `AgentRun` status
 * reimplement the OpenAI Agents SDK execution loop
-* implement future infrastructure such as persistence, HITL, context, tracing, or evaluation
+* implement persistence details
+* implement future infrastructure such as HITL, context, tracing, or evaluation
+
+Persistence integration with runtime orchestration may be added after the Persistence boundary itself is implemented and verified.
 
 ## Tool Gateway
 
@@ -96,10 +105,35 @@ It must not:
 * mutate `AgentRun` lifecycle state
 * implement individual tool business logic
 * reimplement the OpenAI Agents SDK tool-calling loop
-* implement future infrastructure such as persistence, HITL, tracing, context, or evaluation
+* implement persistence, HITL, tracing, context, or evaluation
+
+## Persistence
+
+Persistence provides durable storage and restoration of `AgentRun`.
+
+The domain `AgentRun` remains independent from SQLAlchemy and database concerns.
+
+Persistence is responsible for:
+
+* storing the current `AgentRun`
+* restoring an `AgentRun` by `run_id`
+* mapping between the domain model and persistence model
+* performing database access through SQLAlchemy
+
+Persistence must not:
+
+* decide or perform lifecycle transitions
+* mutate `AgentRun` status according to business rules
+* orchestrate Agent execution
+* execute tools
+* implement HITL, context, tracing, or evaluation
+* introduce generic persistence abstractions without a current requirement
+
+Detailed Persistence design is defined in `PERSISTENCE.md`.
 
 ## Layer Responsibilities
 
+```text
 AgentRun
 → stores run state and request data
 
@@ -115,12 +149,18 @@ AgentRuntime
 Tool Gateway
 → controls the boundary between SDK tool calls and tool execution
 
+Persistence
+→ stores and restores AgentRun without owning domain rules
+
 OpenAI Agents SDK
 → executes Agent-level behavior
+```
 
 ## Current Scope
 
-Implemented through `ToolGateway`.
+Implemented through `Persistence`.
+
+Runtime-Persistence integration is the next implementation stage.
 
 Do not implement later infrastructure unless explicitly requested.
 
