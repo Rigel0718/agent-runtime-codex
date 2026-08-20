@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, Text, Uuid
+from sqlalchemy import DateTime, Enum, ForeignKey, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from agent_harness.runs.model import RunStatus
@@ -25,3 +25,14 @@ class AgentRunModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+
+
+class RunStateModel(Base):
+    __tablename__ = "run_states"
+
+    run_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("agent_runs.run_id"),
+        primary_key=True,
+    )
+    state: Mapped[str] = mapped_column(Text, nullable=False)

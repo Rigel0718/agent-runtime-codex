@@ -3,7 +3,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from agent_harness import AgentRun, AgentRunRepository, RunStatus
+from unittest.mock import MagicMock
+
+from agents import Agent, RunState
+
+from agent_harness import AgentRun, AgentRunRepository, RunStateRepository, RunStatus
 from agent_harness.persistence import (
     Base,
     create_database_engine,
@@ -66,5 +70,40 @@ def test_agent_run_repository_returns_none_for_unknown_run(
             assert await repository.get(uuid4()) is None
         finally:
             await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_run_state_repository_round_trip(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    async def scenario() -> None:
+        engine = create_database_engine(
+            f"sqlite+aiosqlite:///{tmp_path / 'run-states.db'}"
+        )
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+
+            session_factory = create_session_factory(engine)
+            run = AgentRun(user_id=uuid4(), input="Needs approval")
+            await AgentRunRepository(session_factory).save(run)
+            repository = RunStateRepository(session_factory)
+            state = MagicMock(spec=RunState)
+            state.to_string.return_value = '{"saved": true}'
+            restored_state = object()
+            from_string = AsyncMock(return_value=restored_state)
+            monkeypatch.setattr(RunState, "from_string", from_string)
+            agent = Agent(name="operator")
+
+            await repository.save(run.run_id, state)
+
+            assert await repository.get(run.run_id, agent) is restored_state
+            from_string.assert_awaited_once_with(agent, '{"saved": true}')
+        finally:
+            await engine.dispose()
+
+    from unittest.mock import AsyncMock
 
     asyncio.run(scenario())

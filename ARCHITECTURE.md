@@ -26,6 +26,12 @@ AgentRun
 Persistence
     ↕
 Database
+
+HITL
+    ↕
+SDK RunState
+    ↕
+Persistence
 ```
 
 ## AgentRun
@@ -81,6 +87,7 @@ It is responsible for:
 * executing the SDK Agent
 * completing or failing the lifecycle according to the execution result
 * persisting `AgentRun` after runtime-owned lifecycle transitions
+* detecting SDK approval interruptions and resuming persisted SDK `RunState`
 
 It must not:
 
@@ -89,7 +96,7 @@ It must not:
 * implement database or SQLAlchemy details
 * decide persistence mapping rules
 * take ownership of `AgentRun` creation for persistence integration
-* implement future infrastructure such as HITL, context, tracing, or evaluation
+* implement future infrastructure such as context, tracing, or evaluation
 
 Runtime orchestrates persistence timing, while Lifecycle owns transitions and Persistence owns storage.
 
@@ -124,6 +131,7 @@ Persistence is responsible for:
 * restoring an `AgentRun` by `run_id`
 * mapping between the domain model and persistence model
 * performing database access through SQLAlchemy
+* storing and restoring SDK `RunState` separately from `AgentRun`, keyed by `run_id`
 
 Persistence must not:
 
@@ -132,7 +140,7 @@ Persistence must not:
 * orchestrate Agent execution
 * decide when runtime lifecycle transitions occur
 * execute tools
-* implement HITL, context, tracing, or evaluation
+* apply approval decisions or orchestrate HITL execution
 * introduce generic persistence abstractions without a current requirement
 
 Detailed Persistence design is defined in `PERSISTENCE.md`.
@@ -160,13 +168,20 @@ Persistence
 
 OpenAI Agents SDK
 → executes Agent-level behavior
+
+HITL
+→ applies approve/reject decisions to pending SDK interruptions
+
+SDK RunState
+→ stores the SDK execution state required to resume an interrupted run
 ```
 
 ## Current Scope
 
-Implemented through Runtime-Persistence integration.
+Implemented through HITL v0.
 
-The runtime persists runtime-owned `RUNNING`, `COMPLETED`, and `FAILED` states.
+The runtime persists runtime-owned lifecycle transitions and SDK `RunState` at approval
+interruptions, then restores it to resume after an approve or reject decision.
 
 Retry policy, Unit of Work, transaction orchestration, and later infrastructure are outside the current scope.
 

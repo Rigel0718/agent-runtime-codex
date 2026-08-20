@@ -26,6 +26,8 @@ Repository-wide Codex 작업 규칙은 `AGENTS.md`를 따른다.
 
 Persistence의 상세 설계와 구현 범위는 `PERSISTENCE.md`를 따른다.
 
+HITL의 상세 설계와 구현 범위는 `src/agent_harness/hitl/HITL.md`를 따른다.
+
 ## Decisions
 
 ### 2026-08
@@ -46,7 +48,7 @@ Persistence의 상세 설계와 구현 범위는 `PERSISTENCE.md`를 따른다.
 
 ## Current Stage
 
-Persistence 초기 구현을 완료했다.
+HITL v0 구현을 완료했다.
 
 현재 구현 완료 범위:
 
@@ -57,11 +59,13 @@ AgentRun
 → AgentRuntime
 → ToolGateway
 → Persistence
+→ HITL
 ```
 
-`AgentRuntime`과 Persistence를 실제 execution flow에서 연결하는 단계를 완료했다.
+SDK approval interruption에서 `WAITING_APPROVAL`과 `RunState`를 저장하고,
+approve/reject 결정 후 동일한 SDK 실행을 재개하는 흐름을 완료했다.
 
-다음 단계는 HITL이다.
+다음 단계는 Context이다.
 
 ## Progress
 
@@ -72,8 +76,8 @@ AgentRun
 * [x] Tool Gateway
 * [x] Persistence
 * [x] Runtime-Persistence integration
-* [ ] HITL ← next
-* [ ] Context
+* [x] HITL
+* [ ] Context ← next
 * [ ] Tracing
 * [ ] Evaluation
 
