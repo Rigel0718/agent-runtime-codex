@@ -7,6 +7,7 @@ import pytest
 from agents import Agent, RunState, Runner
 
 from agent_harness import (
+    AgentContext,
     AgentRun,
     AgentRunRepository,
     AgentRuntime,
@@ -56,6 +57,34 @@ def test_run_executes_sdk_agent_and_completes_lifecycle(
     assert calls == [(agent, runtime.run_record.input)]
     assert runtime.run_record.status is RunStatus.COMPLETED
     assert saved_statuses == [RunStatus.RUNNING, RunStatus.COMPLETED]
+
+
+def test_run_passes_context_to_sdk_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = make_runtime()
+    agent = Agent(name="summarizer")
+    context = AgentContext(
+        run_id=runtime.run_record.run_id,
+        user_id=runtime.run_record.user_id,
+    )
+    expected_result = MagicMock(interruptions=[])
+
+    async def fake_run(
+        starting_agent: Agent[Any],
+        input: str,
+        **kwargs: Any,
+    ) -> Any:
+        assert starting_agent is agent
+        assert input == runtime.run_record.input
+        assert kwargs["context"] is context
+        return expected_result
+
+    monkeypatch.setattr(Runner, "run", fake_run)
+
+    result = asyncio.run(runtime.run(agent, context))
+
+    assert result is expected_result
 
 
 def test_run_fails_lifecycle_and_reraises_sdk_error(
@@ -190,3 +219,39 @@ def test_resume_applies_decision_and_completes(
             interruption,
             rejection_message=None,
         )
+
+
+def test_resume_passes_context_to_sdk_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = AsyncMock(spec=AgentRunRepository)
+    state_repository = AsyncMock(spec=RunStateRepository)
+    run_record = AgentRun(
+        user_id=uuid4(),
+        input="Delete the file",
+        status=RunStatus.WAITING_APPROVAL,
+    )
+    runtime = AgentRuntime(run_record, repository, state_repository)
+    agent = Agent(name="operator")
+    context = AgentContext(run_id=run_record.run_id, user_id=run_record.user_id)
+    interruption = object()
+    state = MagicMock(spec=RunState)
+    state.get_interruptions.return_value = [interruption]
+    state_repository.get.return_value = state
+    expected_result = MagicMock(interruptions=[])
+
+    async def fake_run(
+        starting_agent: Agent[Any], input: Any, **kwargs: Any
+    ) -> Any:
+        assert starting_agent is agent
+        assert input is state
+        assert kwargs["context"] is context
+        return expected_result
+
+    monkeypatch.setattr(Runner, "run", fake_run)
+
+    result = asyncio.run(
+        runtime.resume(agent, ApprovalDecision.APPROVE, context=context)
+    )
+
+    assert result is expected_result

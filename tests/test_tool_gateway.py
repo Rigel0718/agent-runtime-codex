@@ -1,11 +1,12 @@
 import asyncio
 from typing import Any
+from uuid import uuid4
 
 import pytest
-from agents import FunctionTool, function_tool, set_tracing_disabled
+from agents import FunctionTool, RunContextWrapper, function_tool, set_tracing_disabled
 from agents.tool_context import ToolContext
 
-from agent_harness import ToolGateway, ToolNotRegisteredError
+from agent_harness import AgentContext, ToolGateway, ToolNotRegisteredError
 
 
 set_tracing_disabled(True)
@@ -111,3 +112,30 @@ def test_sdk_compatible_tool_preserves_definition_and_uses_gateway(
     assert sdk_tool.params_json_schema == echo.params_json_schema
     assert calls == [("echo", '{"message": "hello"}')]
     assert result == "hello"
+
+
+def test_tool_can_access_agent_context() -> None:
+    context = AgentContext(run_id=uuid4(), user_id=uuid4())
+    received_contexts: list[AgentContext] = []
+
+    @function_tool
+    async def current_user(wrapper: RunContextWrapper[AgentContext]) -> str:
+        """Return the current user identifier."""
+        received_contexts.append(wrapper.context)
+        return str(wrapper.context.user_id)
+
+    gateway = ToolGateway()
+    gateway.register(current_user)
+    sdk_context = ToolContext(
+        context=context,
+        tool_name="current_user",
+        tool_call_id="test-call",
+        tool_arguments="{}",
+    )
+
+    result = asyncio.run(
+        gateway.sdk_tool("current_user").on_invoke_tool(sdk_context, "{}")
+    )
+
+    assert received_contexts == [context]
+    assert result == str(context.user_id)

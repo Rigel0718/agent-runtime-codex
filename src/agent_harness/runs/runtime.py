@@ -3,6 +3,7 @@ from typing import Any
 
 from agents import Agent, RunResult, Runner, RunState
 
+from agent_harness.context import AgentContext
 from agent_harness.hitl import ApprovalDecision, ApprovalHandler
 from agent_harness.persistence.repository import AgentRunRepository
 from agent_harness.persistence.run_state_repository import RunStateRepository
@@ -25,12 +26,18 @@ class AgentRuntime:
         self._lifecycle = AgentLifecycle(self.run_record)
         self._approval_handler = ApprovalHandler()
 
-    async def run(self, agent: Agent[Any]) -> RunResult:
+    async def run(
+        self, agent: Agent[Any], context: AgentContext | None = None
+    ) -> RunResult:
         self._lifecycle.start()
         await self.repository.save(self.run_record)
 
         try:
-            result = await Runner.run(agent, self.run_record.input)
+            result = await Runner.run(
+                agent,
+                self.run_record.input,
+                context=context,
+            )
         except Exception:
             self._lifecycle.fail()
             await self.repository.save(self.run_record)
@@ -43,6 +50,7 @@ class AgentRuntime:
         agent: Agent[Any],
         decision: ApprovalDecision,
         *,
+        context: AgentContext | None = None,
         approval_index: int = 0,
         rejection_message: str | None = None,
     ) -> RunResult:
@@ -63,7 +71,7 @@ class AgentRuntime:
         await self.repository.save(self.run_record)
 
         try:
-            result = await Runner.run(agent, state)
+            result = await Runner.run(agent, state, context=context)
         except Exception:
             self._lifecycle.fail()
             await self.repository.save(self.run_record)

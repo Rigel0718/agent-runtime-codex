@@ -1,6 +1,7 @@
-from .runs.lifecycle import AgentLifecycle
+from .context import AgentContext
 from .hitl import ApprovalDecision, ApprovalHandler, PendingApprovalNotFoundError
 from .persistence import AgentRunRepository, RunStateRepository
+from .runs.lifecycle import AgentLifecycle
 from .runs.model import AgentRun, RunStatus
 from .runs.runtime import AgentRuntime
 from .runs.state_machine import (
@@ -11,6 +12,7 @@ from .tools import ToolGateway, ToolNotRegisteredError
 
 __all__ = [
     "AgentLifecycle",
+    "AgentContext",
     "ApprovalDecision",
     "ApprovalHandler",
     "AgentRun",

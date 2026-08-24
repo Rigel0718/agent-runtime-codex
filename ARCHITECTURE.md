@@ -13,7 +13,8 @@ AgentLifecycle
     ↑
 AgentRuntime
     │
-    └── Persistence
+    ├── Persistence
+    └── Context
 
 OpenAI Agents SDK
     ↓
@@ -32,6 +33,14 @@ HITL
 SDK RunState
     ↕
 Persistence
+
+Context
+    ↓
+AgentRuntime
+    ↓
+OpenAI Agents SDK
+    ↓
+Agent / Tools
 ```
 
 ## AgentRun
@@ -145,6 +154,16 @@ Persistence must not:
 
 Detailed Persistence design is defined in `PERSISTENCE.md`.
 
+## Context
+
+Context provides Harness-owned contextual data for one Agent execution.
+
+`AgentContext` contains the current `run_id` and `user_id`. `AgentRuntime` passes an
+optional context unchanged to the OpenAI Agents SDK so Agents and Tools can access it.
+
+Context does not own persistence, lifecycle transitions, execution orchestration,
+conversation history, or long-term memory.
+
 ## Layer Responsibilities
 
 ```text
@@ -166,6 +185,9 @@ Tool Gateway
 Persistence
 → stores and restores AgentRun without owning domain rules
 
+Context
+→ carries run-scoped contextual data to SDK Agents and Tools
+
 OpenAI Agents SDK
 → executes Agent-level behavior
 
@@ -178,10 +200,13 @@ SDK RunState
 
 ## Current Scope
 
-Implemented through HITL v0.
+Implemented through Context v0.
 
 The runtime persists runtime-owned lifecycle transitions and SDK `RunState` at approval
 interruptions, then restores it to resume after an approve or reject decision.
+
+The runtime optionally passes `AgentContext` to SDK execution without interpreting or
+persisting it.
 
 Retry policy, Unit of Work, transaction orchestration, and later infrastructure are outside the current scope.
 
