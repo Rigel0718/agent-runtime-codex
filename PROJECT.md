@@ -30,6 +30,8 @@ HITL의 상세 설계와 구현 범위는 `src/agent_harness/hitl/HITL.md`를 �
 
 Context의 상세 설계와 구현 범위는 `src/agent_harness/context/CONTEXT.md`를 따른다.
 
+Tracing의 상세 설계와 구현 범위는 `src/agent_harness/tracing/TRACING.md`를 따른다.
+
 ## Decisions
 
 ### 2026-08
@@ -50,7 +52,7 @@ Context의 상세 설계와 구현 범위는 `src/agent_harness/context/CONTEXT.
 
 ## Current Stage
 
-Context v0 구현을 완료했다.
+Tracing v0 구현을 완료했다.
 
 현재 구현 완료 범위:
 
@@ -63,6 +65,7 @@ AgentRun
 → Persistence
 → HITL
 → Context
+→ Tracing
 ```
 
 SDK approval interruption에서 `WAITING_APPROVAL`과 `RunState`를 저장하고,
@@ -71,7 +74,10 @@ approve/reject 결정 후 동일한 SDK 실행을 재개하는 흐름을 완료�
 `AgentContext`를 optional로 SDK execution에 전달하고 Agent와 Tool이
 동일한 context를 참조할 수 있는 흐름을 완료했다.
 
-다음 단계는 Tracing이다.
+`AgentRuntime`의 run execution event와 `ToolGateway`의 tool execution event를
+동일한 `run_id`로 연결하여 in-memory recorder에 기록하는 흐름을 완료했다.
+
+다음 단계는 Evaluation이다.
 
 ## Progress
 
@@ -84,8 +90,8 @@ approve/reject 결정 후 동일한 SDK 실행을 재개하는 흐름을 완료�
 * [x] Runtime-Persistence integration
 * [x] HITL
 * [x] Context
-* [ ] Tracing ← next
-* [ ] Evaluation
+* [x] Tracing
+* [ ] Evaluation ← next
 
 ## Development Approach
 

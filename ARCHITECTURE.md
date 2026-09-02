@@ -14,13 +14,14 @@ AgentLifecycle
 AgentRuntime
     │
     ├── Persistence
-    └── Context
+    ├── Context
+    └── Tracing
 
 OpenAI Agents SDK
     ↓
 Tool Gateway
-    ↓
-Tools
+    ├── Tools
+    └── Tracing
 
 AgentRun
     ↕
@@ -105,7 +106,7 @@ It must not:
 * implement database or SQLAlchemy details
 * decide persistence mapping rules
 * take ownership of `AgentRun` creation for persistence integration
-* implement future infrastructure such as context, tracing, or evaluation
+* implement database-backed tracing storage, metrics, or evaluation
 
 Runtime orchestrates persistence timing, while Lifecycle owns transitions and Persistence owns storage.
 
@@ -126,7 +127,7 @@ It must not:
 * mutate `AgentRun` lifecycle state
 * implement individual tool business logic
 * reimplement the OpenAI Agents SDK tool-calling loop
-* implement persistence, HITL, tracing, context, or evaluation
+* implement persistence, HITL, context management, or evaluation
 
 ## Persistence
 
@@ -164,6 +165,17 @@ optional context unchanged to the OpenAI Agents SDK so Agents and Tools can acce
 Context does not own persistence, lifecycle transitions, execution orchestration,
 conversation history, or long-term memory.
 
+## Tracing
+
+Tracing observes meaningful execution events at Harness-owned boundaries.
+
+`AgentRuntime` records run start, completion, and failure events. `ToolGateway` records
+tool start, completion, and failure events. A minimal in-memory recorder stores events,
+and every event is connected to its execution by `run_id`.
+
+Tracing does not own lifecycle transitions, execution correctness, durable storage,
+OpenTelemetry integration, metrics, or evaluation.
+
 ## Layer Responsibilities
 
 ```text
@@ -188,6 +200,9 @@ Persistence
 Context
 → carries run-scoped contextual data to SDK Agents and Tools
 
+Tracing
+→ records run and tool execution events at Harness boundaries
+
 OpenAI Agents SDK
 → executes Agent-level behavior
 
@@ -200,13 +215,14 @@ SDK RunState
 
 ## Current Scope
 
-Implemented through Context v0.
+Implemented through Tracing v0.
 
 The runtime persists runtime-owned lifecycle transitions and SDK `RunState` at approval
 interruptions, then restores it to resume after an approve or reject decision.
 
 The runtime optionally passes `AgentContext` to SDK execution without interpreting or
-persisting it.
+persisting it. Runtime and tool execution events are recorded in memory and correlated
+through the same `run_id`.
 
 Retry policy, Unit of Work, transaction orchestration, and later infrastructure are outside the current scope.
 

@@ -9,6 +9,7 @@ from .runs.state_machine import (
     InvalidRunTransitionError,
 )
 from .tools import ToolGateway, ToolNotRegisteredError
+from .tracing import TraceEvent, TraceEventType, TraceRecorder
 
 __all__ = [
     "AgentLifecycle",
@@ -25,4 +26,7 @@ __all__ = [
     "RunStateRepository",
     "ToolGateway",
     "ToolNotRegisteredError",
+    "TraceEvent",
+    "TraceEventType",
+    "TraceRecorder",
 ]

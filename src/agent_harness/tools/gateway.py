@@ -1,8 +1,12 @@
 from dataclasses import dataclass, field, replace
 from typing import Any
+from uuid import UUID
 
 from agents import FunctionTool
 from agents.tool_context import ToolContext
+
+from agent_harness.context import AgentContext
+from agent_harness.tracing import TraceEventType, TraceRecorder
 
 
 class ToolNotRegisteredError(LookupError):
@@ -17,6 +21,7 @@ class ToolNotRegisteredError(LookupError):
 class ToolGateway:
     """Register and execute SDK function tools through a harness boundary."""
 
+    trace_recorder: TraceRecorder | None = None
     _tools: dict[str, FunctionTool] = field(default_factory=dict, init=False, repr=False)
 
     def register(self, tool: FunctionTool) -> None:
@@ -35,7 +40,18 @@ class ToolGateway:
         arguments: str,
     ) -> Any:
         tool = self.resolve(name)
-        return await tool.on_invoke_tool(context, arguments)
+        run_id = self._run_id(context)
+        if self.trace_recorder is not None and run_id is not None:
+            self.trace_recorder.record(run_id, TraceEventType.TOOL_STARTED)
+        try:
+            result = await tool.on_invoke_tool(context, arguments)
+        except Exception:
+            if self.trace_recorder is not None and run_id is not None:
+                self.trace_recorder.record(run_id, TraceEventType.TOOL_FAILED)
+            raise
+        if self.trace_recorder is not None and run_id is not None:
+            self.trace_recorder.record(run_id, TraceEventType.TOOL_COMPLETED)
+        return result
 
     def sdk_tool(self, name: str) -> FunctionTool:
         """Return an SDK-compatible tool whose execution passes through the gateway."""
@@ -45,3 +61,10 @@ class ToolGateway:
             return await self.execute(name, context, arguments)
 
         return replace(tool, on_invoke_tool=invoke)
+
+    @staticmethod
+    def _run_id(context: ToolContext[Any]) -> UUID | None:
+        agent_context = context.context
+        if isinstance(agent_context, AgentContext):
+            return agent_context.run_id
+        return None

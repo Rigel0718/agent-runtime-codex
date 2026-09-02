@@ -7,6 +7,7 @@ from agent_harness.context import AgentContext
 from agent_harness.hitl import ApprovalDecision, ApprovalHandler
 from agent_harness.persistence.repository import AgentRunRepository
 from agent_harness.persistence.run_state_repository import RunStateRepository
+from agent_harness.tracing import TraceEventType, TraceRecorder
 
 from .lifecycle import AgentLifecycle
 from .model import AgentRun
@@ -19,6 +20,7 @@ class AgentRuntime:
     run_record: AgentRun
     repository: AgentRunRepository
     run_state_repository: RunStateRepository | None = None
+    trace_recorder: TraceRecorder | None = None
     _lifecycle: AgentLifecycle = field(init=False, repr=False)
     _approval_handler: ApprovalHandler = field(init=False, repr=False)
 
@@ -30,6 +32,7 @@ class AgentRuntime:
         self, agent: Agent[Any], context: AgentContext | None = None
     ) -> RunResult:
         self._lifecycle.start()
+        self._record(TraceEventType.RUN_STARTED)
         await self.repository.save(self.run_record)
 
         try:
@@ -40,6 +43,7 @@ class AgentRuntime:
             )
         except Exception:
             self._lifecycle.fail()
+            self._record(TraceEventType.RUN_FAILED)
             await self.repository.save(self.run_record)
             raise
 
@@ -74,6 +78,7 @@ class AgentRuntime:
             result = await Runner.run(agent, state, context=context)
         except Exception:
             self._lifecycle.fail()
+            self._record(TraceEventType.RUN_FAILED)
             await self.repository.save(self.run_record)
             raise
 
@@ -92,5 +97,10 @@ class AgentRuntime:
             return result
 
         self._lifecycle.complete()
+        self._record(TraceEventType.RUN_COMPLETED)
         await self.repository.save(self.run_record)
         return result
+
+    def _record(self, event_type: TraceEventType) -> None:
+        if self.trace_recorder is not None:
+            self.trace_recorder.record(self.run_record.run_id, event_type)
