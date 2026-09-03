@@ -54,6 +54,8 @@ Tracing의 상세 설계와 구현 범위는 `src/agent_harness/tracing/TRACING.
 
 Tracing v0 구현을 완료했다.
 
+Agent Harness v0 E2E validation을 완료했다.
+
 현재 구현 완료 범위:
 
 ```text
@@ -91,6 +93,7 @@ approve/reject 결정 후 동일한 SDK 실행을 재개하는 흐름을 완료�
 * [x] HITL
 * [x] Context
 * [x] Tracing
+* [x] V0 E2E Validation
 * [ ] Evaluation ← next
 
 ## Development Approach
